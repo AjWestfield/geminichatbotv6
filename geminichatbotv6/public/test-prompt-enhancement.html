@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Enhancement Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            background-color: #3a3a3a;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        button {
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #5855eb;
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        .result {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border-left: 4px solid #6366f1;
+        }
+        .error {
+            border-left-color: #ef4444;
+            background-color: #2a1a1a;
+        }
+        .success {
+            border-left-color: #10b981;
+            background-color: #1a2a1a;
+        }
+        .loading {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <h1>Prompt Enhancement Test</h1>
+    
+    <div class="test-container">
+        <h2>Test Prompt Enhancement API</h2>
+        <textarea id="promptInput" placeholder="Enter a prompt to enhance...">Create a beautiful sunset image</textarea>
+        <br>
+        <button id="enhanceBtn" onclick="testEnhancement()">Enhance Prompt</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let isEnhancing = false;
+
+        async function testEnhancement() {
+            if (isEnhancing) return;
+            
+            const promptInput = document.getElementById('promptInput');
+            const enhanceBtn = document.getElementById('enhanceBtn');
+            const resultsDiv = document.getElementById('results');
+            
+            const prompt = promptInput.value.trim();
+            
+            if (!prompt || prompt.length < 2) {
+                showResult('Please enter a prompt with at least 2 characters', 'error');
+                return;
+            }
+            
+            isEnhancing = true;
+            enhanceBtn.disabled = true;
+            enhanceBtn.textContent = 'Enhancing...';
+            
+            showResult('Sending request to enhancement API...', 'loading');
+            
+            try {
+                const response = await fetch('/api/enhance-prompt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        model: 'gemini',
+                        context: 'chat',
+                        regenerate: false
+                    }),
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (data.success && data.enhancedPrompt) {
+                    showResult(`
+                        <strong>✅ Enhancement Successful!</strong><br>
+                        <strong>Original:</strong> ${data.originalPrompt}<br><br>
+                        <strong>Enhanced:</strong> ${data.enhancedPrompt}<br><br>
+                        <strong>Model:</strong> ${data.model}
+                    `, 'success');
+                    
+                    // Update the textarea with enhanced prompt
+                    promptInput.value = data.enhancedPrompt;
+                } else {
+                    throw new Error(data.error || 'No enhanced prompt returned');
+                }
+                
+            } catch (error) {
+                console.error('Enhancement error:', error);
+                showResult(`❌ Enhancement Failed: ${error.message}`, 'error');
+            } finally {
+                isEnhancing = false;
+                enhanceBtn.disabled = false;
+                enhanceBtn.textContent = 'Enhance Prompt';
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultsDiv = document.getElementById('results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.innerHTML = message;
+            resultsDiv.appendChild(resultElement);
+            
+            // Auto-scroll to the new result
+            resultElement.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Allow Enter key to trigger enhancement
+        document.getElementById('promptInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                testEnhancement();
+            }
+        });
+    </script>
+</body>
+</html>

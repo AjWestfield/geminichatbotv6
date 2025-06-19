@@ -1,0 +1,482 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import audio volume slider styles */
+@import "./audio-volume-slider.css";
+
+/* Image Comparison Slider Styles */
+.image-comparison-slider {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.image-comparison-slider img {
+  user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* Dynamic clipping for comparison slider */
+.image-comparison-clipped {
+  clip-path: inset(0 var(--clip-right) 0 0);
+}
+
+/* Dynamic positioning for slider handle */
+.image-comparison-handle {
+  left: var(--slider-position);
+}
+
+/* Prevent highlighting during drag */
+.slider-dragging {
+  cursor: ew-resize !important;
+}
+
+.slider-dragging * {
+  cursor: ew-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Smooth transitions for hover effects */
+.slider-handle {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.slider-handle:hover {
+  transform: scale(1.15);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 1);
+}
+
+/* Active state when dragging */
+.slider-dragging .slider-handle {
+  transform: scale(1.05);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+/* Compact Modal Fullscreen Transitions */
+.compact-modal-transition {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  transform-origin: center center;
+}
+
+/* Dialog overlay smooth transition */
+[role="dialog"]:has(.compact-modal-transition) {
+  animation: dialogFadeIn 0.3s ease-out;
+}
+
+@keyframes dialogFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fullscreen modal specific styles */
+.fullscreen-modal {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  transform: none !important;
+}
+
+/* Prevent layout shift on fullscreen toggle */
+.fullscreen-modal * {
+  transition: none !important;
+}
+
+/* Smooth content transitions */
+.fullscreen-modal .flex-1 {
+  transition: padding 0.3s ease !important;
+}
+
+/* Prevent body scroll when fullscreen modal is open */
+body:has(.fullscreen-modal),
+body.modal-fullscreen-active {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Smooth scrolling for modal bottom section */
+.modal-bottom-section {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.modal-bottom-section::-webkit-scrollbar {
+  width: 4px;
+}
+
+.modal-bottom-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-bottom-section::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.modal-bottom-section::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Compact Modal Styles for Image Comparison */
+.compact-modal-dialog {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+}
+
+.compact-modal-content {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  padding: 1rem !important;
+  gap: 0.75rem !important;
+}
+
+.compact-image-container {
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.compact-split-view {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+.compact-image-pair {
+  flex: 1 !important;
+  display: flex !important;
+  gap: 0.5rem !important;
+  min-height: 0 !important;
+}
+
+.compact-image-frame {
+  flex: 1 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.compact-image-frame img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+.compact-action-bar {
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  padding-top: 0.75rem !important;
+  border-top: 1px solid #333 !important;
+}
+
+.compact-action-bar button {
+  height: 2rem !important;
+  padding: 0 0.75rem !important;
+  font-size: 0.75rem !important;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    /* Fallback for browsers that don't support text-wrap: balance */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+  }
+
+  /* Progressive enhancement for modern browsers */
+  @supports (text-wrap: balance) {
+    .text-balance {
+      text-wrap: balance;
+    }
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+
+/* Video loading and display fixes */
+.video-loading-fix video {
+  background-color: #1a1a1a;
+  object-fit: cover;
+}
+
+/* Prevent video flashing */
+video:not([src]),
+video[src=""] {
+  display: none;
+}
+
+/* Smooth video transitions */
+video {
+  transition: opacity 0.2s ease-in-out;
+}
+
+video.loading {
+  opacity: 0.5;
+}
+
+
+/* Enhanced Chat Tooltip Styles */
+@layer components {
+  /* Smooth tooltip animations */
+  [data-radix-popper-content-wrapper] {
+    animation: tooltipFadeIn 0.2s ease-out;
+  }
+
+  @keyframes tooltipFadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Custom scrollbar for chat titles */
+  .sidebar-chat-title {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+
+  .sidebar-chat-title::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .sidebar-chat-title::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-chat-title::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    transition: background-color 0.2s;
+  }
+
+  .sidebar-chat-title:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Tooltip pulse animation for active status */
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Sidebar shadow variable */
+  :root {
+    --sidebar-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark {
+    --sidebar-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Prompt Enhancer Animations */
+@keyframes sparkle-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotate(-180deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) rotate(-90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes subtle-glow {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.1);
+  }
+}
+
+.enhance-button-appear {
+  animation: sparkle-appear 0.3s ease-out;
+}
+
+.enhance-button-glow {
+  animation: subtle-glow 2s ease-in-out infinite;
+}
+
+/* File Preview Modal Responsive Styles */
+.file-preview-modal-content {
+  /* Ensure proper scrolling behavior */
+  scrollbar-width: thin;
+  scrollbar-color: #4a4a4a #2b2b2b;
+}
+
+.file-preview-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.file-preview-modal-content::-webkit-scrollbar-track {
+  background: #2b2b2b;
+  border-radius: 3px;
+}
+
+.file-preview-modal-content::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 3px;
+}
+
+.file-preview-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* File preview modal mobile adjustments */
+@media (max-width: 768px) {
+  .file-preview-modal-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .file-preview-modal-buttons button {
+    min-width: auto;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Ensure modal content doesn't overflow on small screens */
+@media (max-width: 640px) {
+  .file-preview-modal-content {
+    padding: 0.75rem !important;
+  }
+
+  .file-preview-modal-header {
+    padding: 0.75rem !important;
+  }
+}

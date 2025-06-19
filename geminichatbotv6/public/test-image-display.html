@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Display Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .image-card {
+            background-color: #3a3a3a;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .image-info {
+            padding: 10px;
+            font-size: 12px;
+        }
+        .status {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .status.working { background-color: #10b981; }
+        .status.broken { background-color: #ef4444; }
+        .status.expired { background-color: #f59e0b; }
+        .broken-placeholder {
+            width: 100%;
+            height: 200px;
+            background-color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #ef4444;
+            color: #ef4444;
+            text-align: center;
+            font-size: 12px;
+        }
+        .loading {
+            opacity: 0.7;
+        }
+        button {
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #5855eb;
+        }
+        .stats {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🖼️ Image Display Test</h1>
+    
+    <div class="test-container">
+        <h2>Image Gallery Test</h2>
+        <p>Testing image display, broken image handling, and expired URL detection.</p>
+        
+        <button onclick="loadImages()">Load Images from API</button>
+        <button onclick="testBrokenImages()">Test Broken Image Handling</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <h3>📊 Test Results</h3>
+            <div id="statsContent"></div>
+        </div>
+        
+        <div class="image-grid" id="imageGrid"></div>
+    </div>
+
+    <script>
+        let testResults = {
+            total: 0,
+            working: 0,
+            broken: 0,
+            expired: 0
+        };
+
+        async function loadImages() {
+            console.log('Loading images from API...');
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '<div class="loading">Loading images...</div>';
+            
+            try {
+                const response = await fetch('/api/images?limit=20');
+                const data = await response.json();
+                
+                console.log('Loaded images:', data.images.length);
+                displayImages(data.images);
+                
+            } catch (error) {
+                console.error('Error loading images:', error);
+                grid.innerHTML = `<div class="broken-placeholder">Error loading images: ${error.message}</div>`;
+            }
+        }
+
+        function displayImages(images) {
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '';
+            
+            testResults = { total: images.length, working: 0, broken: 0, expired: 0 };
+            
+            images.forEach((image, index) => {
+                const card = createImageCard(image, index);
+                grid.appendChild(card);
+            });
+            
+            updateStats();
+        }
+
+        function createImageCard(image, index) {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            card.id = `image-${index}`;
+            
+            const isReplicateUrl = image.url.includes('replicate.delivery');
+            const isLikelyExpired = isReplicateUrl && isOlderThan24Hours(image.created_at);
+            
+            card.innerHTML = `
+                <img 
+                    src="${image.url}" 
+                    alt="${image.prompt.substring(0, 50)}..."
+                    onload="handleImageLoad(${index}, '${isLikelyExpired ? 'expired' : 'working'}')"
+                    onerror="handleImageError(${index})"
+                />
+                <div class="status ${isLikelyExpired ? 'expired' : 'working'}" id="status-${index}">
+                    ${isLikelyExpired ? 'EXPIRED' : 'LOADING'}
+                </div>
+                <div class="image-info">
+                    <div><strong>Model:</strong> ${image.model}</div>
+                    <div><strong>Created:</strong> ${new Date(image.created_at).toLocaleDateString()}</div>
+                    <div><strong>URL Type:</strong> ${isReplicateUrl ? 'Replicate' : 'Vercel Blob'}</div>
+                    <div><strong>Prompt:</strong> ${image.prompt.substring(0, 60)}...</div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function handleImageLoad(index, expectedStatus) {
+            console.log(`Image ${index} loaded successfully`);
+            const status = document.getElementById(`status-${index}`);
+            
+            if (expectedStatus === 'expired') {
+                status.textContent = 'EXPIRED (but loaded)';
+                status.className = 'status expired';
+                testResults.expired++;
+            } else {
+                status.textContent = 'WORKING';
+                status.className = 'status working';
+                testResults.working++;
+            }
+            
+            updateStats();
+        }
+
+        function handleImageError(index) {
+            console.log(`Image ${index} failed to load`);
+            const card = document.getElementById(`image-${index}`);
+            const img = card.querySelector('img');
+            const status = document.getElementById(`status-${index}`);
+            
+            // Replace image with broken placeholder
+            img.style.display = 'none';
+            const placeholder = document.createElement('div');
+            placeholder.className = 'broken-placeholder';
+            placeholder.innerHTML = '⚠️<br>Image Failed<br>URL Expired';
+            card.insertBefore(placeholder, card.querySelector('.image-info'));
+            
+            status.textContent = 'BROKEN';
+            status.className = 'status broken';
+            testResults.broken++;
+            
+            updateStats();
+        }
+
+        function isOlderThan24Hours(dateString) {
+            const imageDate = new Date(dateString);
+            const now = new Date();
+            const hoursDiff = (now - imageDate) / (1000 * 60 * 60);
+            return hoursDiff > 24;
+        }
+
+        function testBrokenImages() {
+            console.log('Testing broken image handling...');
+            const grid = document.getElementById('imageGrid');
+            
+            const testImages = [
+                {
+                    url: 'https://replicate.delivery/expired/test1.jpg',
+                    prompt: 'Test broken image 1',
+                    model: 'test',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    url: 'https://invalid-url.com/test2.jpg',
+                    prompt: 'Test broken image 2', 
+                    model: 'test',
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            displayImages(testImages);
+        }
+
+        function updateStats() {
+            const statsDiv = document.getElementById('stats');
+            const statsContent = document.getElementById('statsContent');
+            
+            statsDiv.style.display = 'block';
+            statsContent.innerHTML = `
+                <div>📊 <strong>Total Images:</strong> ${testResults.total}</div>
+                <div>✅ <strong>Working:</strong> ${testResults.working}</div>
+                <div>❌ <strong>Broken:</strong> ${testResults.broken}</div>
+                <div>⚠️ <strong>Expired:</strong> ${testResults.expired}</div>
+                <div>📈 <strong>Success Rate:</strong> ${testResults.total > 0 ? ((testResults.working / testResults.total) * 100).toFixed(1) : 0}%</div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('imageGrid').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+            testResults = { total: 0, working: 0, broken: 0, expired: 0 };
+        }
+
+        // Auto-load images on page load
+        window.addEventListener('load', loadImages);
+    </script>
+</body>
+</html>

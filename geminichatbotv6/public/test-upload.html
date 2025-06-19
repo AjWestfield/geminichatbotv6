@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .container {
+            background-color: #2b2b2b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #0070f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0051a2;
+        }
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        .log {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .info { color: #60a5fa; }
+        .warning { color: #fbbf24; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Upload API Test</h1>
+    
+    <div class="container">
+        <h2>File Upload Test</h2>
+        <p>This page tests the same upload functionality used by the chat interface.</p>
+        
+        <input type="file" id="fileInput" accept="image/*,audio/*,video/*">
+        <br>
+        <button onclick="testUpload()" id="uploadBtn">Test Upload</button>
+        <button onclick="createTestImage()" id="testImageBtn">Create Test Image</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="container">
+        <h3>Test Log</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function createTestImage() {
+            log('Creating test image...', 'info');
+            
+            // Create a 1x1 pixel PNG image
+            const canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = 1;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(0, 0, 1, 1);
+            
+            canvas.toBlob((blob) => {
+                const file = new File([blob], 'test.png', { type: 'image/png' });
+                
+                // Create a file input and set the file
+                const fileInput = document.getElementById('fileInput');
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                
+                log(`✅ Test image created: ${file.name} (${file.size} bytes)`, 'success');
+            }, 'image/png');
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                log('❌ No file selected. Please select a file first.', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            log(`🚀 Starting upload test for: ${file.name}`, 'info');
+            log(`   File type: ${file.type}`, 'info');
+            log(`   File size: ${file.size} bytes`, 'info');
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+
+            try {
+                // Create FormData exactly like the chat interface does
+                const formData = new FormData();
+                formData.append("file", file);
+
+                log('📤 Sending fetch request to /api/upload...', 'info');
+                
+                // Use the same fetch call as the chat interface
+                const response = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                log(`📥 Response received: ${response.status} ${response.statusText}`, 'info');
+
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch (parseError) {
+                        log(`❌ Failed to parse error response: ${parseError.message}`, 'error');
+                        throw new Error(`Upload failed with status ${response.status}`);
+                    }
+                    
+                    log(`❌ Server error: ${errorData.error}`, 'error');
+                    if (errorData.details) {
+                        log(`   Details: ${errorData.details}`, 'error');
+                    }
+                    throw new Error(errorData.details || errorData.error || `Upload failed with status ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success || !data.file) {
+                    log('❌ Invalid response data', 'error');
+                    log(`   Response: ${JSON.stringify(data, null, 2)}`, 'error');
+                    throw new Error("Invalid response from upload server");
+                }
+
+                log('✅ Upload successful!', 'success');
+                log(`   File URI: ${data.file.uri}`, 'success');
+                log(`   Display Name: ${data.file.displayName}`, 'success');
+                log(`   MIME Type: ${data.file.mimeType}`, 'success');
+                log(`   Size: ${data.file.sizeBytes} bytes`, 'success');
+
+            } catch (error) {
+                log(`❌ Upload failed: ${error.message}`, 'error');
+                
+                if (error.message.includes('Failed to fetch')) {
+                    log('💡 This is the same "Failed to fetch" error users are experiencing!', 'warning');
+                    log('   Possible causes:', 'warning');
+                    log('   - Network connectivity issues', 'warning');
+                    log('   - CORS configuration problems', 'warning');
+                    log('   - Server not responding', 'warning');
+                    log('   - Browser security policies', 'warning');
+                } else if (error.name === 'TypeError') {
+                    log('💡 TypeError detected - this might be a network or CORS issue', 'warning');
+                }
+                
+                console.error('Upload error details:', error);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Test Upload';
+            }
+        }
+
+        // Initialize
+        log('🔍 Upload API Test Page Loaded', 'info');
+        log(`   Current URL: ${window.location.href}`, 'info');
+        log(`   User Agent: ${navigator.userAgent}`, 'info');
+        log('', 'info');
+        log('Instructions:', 'info');
+        log('1. Click "Create Test Image" to generate a test file', 'info');
+        log('2. Or select your own image/audio/video file', 'info');
+        log('3. Click "Test Upload" to test the upload functionality', 'info');
+    </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "servers": [
+    {
+      "id": "calculator-example",
+      "name": "Calculator",
+      "command": "node",
+      "args": ["example-servers/calculator/dist/index.js"],
+      "env": {}
+    },
+    {
+      "id": "filesystem-example",
+      "name": "File System",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "env": {}
+    },
+    {
+      "id": "sqlite-example",
+      "name": "SQLite Database",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "path/to/database.db"],
+      "env": {}
+    },
+    {
+      "id": "github-example",
+      "name": "GitHub",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "your-github-token"
+      }
+    }
+  ],
+  "version": "1.0",
+  "lastModified": "2024-01-01T00:00:00.000Z"
+}

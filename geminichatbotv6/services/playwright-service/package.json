@@ -1,0 +1,20 @@
+{
+  "name": "playwright-service",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Playwright browser automation service with rrweb recording",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "install-browsers": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "express": "^5.0.1",
+    "playwright": "^1.53.0",
+    "axios": "^1.9.0",
+    "rrweb": "^2.0.0-alpha.4",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.1"
+  }
+}

@@ -1,0 +1,19 @@
+/* Custom styles for audio volume slider to prevent playback interruption */
+.audio-volume-slider {
+  /* Prevent text selection during drag */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  
+  /* Prevent touch callout on iOS */
+  -webkit-touch-callout: none;
+  
+  /* Prevent tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Keep focus rings for accessibility but style them nicely */
+.audio-volume-slider [role="slider"]:focus-visible {
+  outline: none;
+}
