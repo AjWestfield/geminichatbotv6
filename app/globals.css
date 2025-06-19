@@ -1,0 +1,476 @@
+@import "../styles/audio-volume-slider.css";
+@import "../styles/chat-responsive-fixes.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+@layer utilities {
+  .truncate-filename {
+    /* Manual truncate implementation for better browser compatibility */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+
+  @media (max-width: 640px) {
+    .truncate-filename {
+      max-width: 150px;
+    }
+  }
+
+  .truncate-multiline {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    /* Fallback for browsers that don't support line-clamp */
+    max-height: 3em; /* Approximate height for 2 lines */
+    line-height: 1.5;
+  }
+
+  /* Modern browsers with line-clamp support */
+  @supports (line-clamp: 2) {
+    .truncate-multiline {
+      line-clamp: 2;
+    }
+  }
+
+  /* Custom scrollbar for chat titles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 2px;
+  }
+
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(75, 85, 99, 0.5);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.8);
+  }
+
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(75, 85, 99, 0.8);
+  }
+
+  /* Line clamp for chat titles */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Better word breaking for long titles */
+  .break-words {
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+}
+
+@layer base {
+  :root {
+    /* Dark Mode Colors - Based on the provided color palette */
+    --background: 0 0% 12%; /* #1E1E1E */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+
+    /* Sidebar shadow for dark mode */
+    --sidebar-shadow: 4px 0 30px rgba(0, 0, 0, 0.5);
+    --card: 0 0% 10%; /* #1A1A1A */
+    --card-foreground: 0 0% 100%; /* #FFFFFF */
+    --popover: 0 0% 10%; /* #1A1A1A */
+    --popover-foreground: 0 0% 100%; /* #FFFFFF */
+
+    /* Primary Colors - White */
+    --primary: 0 0% 100%; /* #FFFFFF */
+    --primary-foreground: 0 0% 12%; /* #1E1E1E */
+
+    /* Secondary Colors - Dark Gray */
+    --secondary: 0 0% 24%; /* #3C3C3C */
+    --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+
+    /* Accent Colors - Dark Gray */
+    --accent: 0 0% 24%; /* #3C3C3C */
+    --accent-foreground: 0 0% 100%; /* #FFFFFF */
+
+    /* Neutral Colors for Dark Mode */
+    --muted: 0 0% 20%; /* #333333 */
+    --muted-foreground: 0 0% 69%; /* #B0B0B0 */
+
+    /* Surface Colors for Dark Mode */
+    --surface: 0 0% 17%; /* #2B2B2B */
+    --surface-foreground: 0 0% 100%; /* #FFFFFF */
+    --surface-elevated: 0 0% 20%; /* #333333 */
+    --surface-hover: 0 0% 29%; /* #4A4A4A */
+
+    /* Utility Colors for Dark Mode */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%; /* #333333 */
+    --input: 0 0% 20%; /* #333333 */
+    --ring: 0 0% 29%; /* #4A4A4A */
+    --radius: 0.5rem;
+
+    /* Sidebar Colors for Dark Mode */
+    --sidebar-background: 0 0% 17%; /* #2B2B2B */
+    --sidebar-foreground: 0 0% 100%; /* #FFFFFF */
+    --sidebar-primary: 0 0% 100%; /* #FFFFFF */
+    --sidebar-primary-foreground: 0 0% 12%; /* #1E1E1E */
+    --sidebar-accent: 0 0% 24%; /* #3C3C3C */
+    --sidebar-accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --sidebar-border: 0 0% 20%; /* #333333 */
+    --sidebar-ring: 0 0% 29%; /* #4A4A4A */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Smooth transitions for theme switching - exclude transform for performance */
+  * {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Exclude transform from global transitions to avoid performance issues in animations */
+  *:not([class*="animate-"]):not(.smooth-transform) {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+
+  /* Custom audio player styles */
+  audio {
+    width: 100%;
+    height: 48px;
+    outline: none;
+  }
+
+  audio::-webkit-media-controls-panel {
+    background-color: #1a1a1a;
+    border-radius: 8px;
+  }
+
+  audio::-webkit-media-controls-current-time-display,
+  audio::-webkit-media-controls-time-remaining-display {
+    color: #b0b0b0;
+  }
+
+  audio::-webkit-media-controls-play-button,
+  audio::-webkit-media-controls-mute-button {
+    filter: invert(1);
+  }
+
+  audio::-webkit-media-controls-timeline {
+    filter: invert(0.8);
+  }
+
+  audio::-webkit-media-controls-volume-slider {
+    filter: invert(0.8);
+  }
+
+  /* Focus styles */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Glass effect with fallback for older browsers */
+  .glass {
+    /* Fallback background for browsers without backdrop-filter support */
+    background: rgba(30, 30, 30, 0.85);
+    border: 1px solid rgba(51, 51, 51, 0.5);
+  }
+
+  /* Enhanced glass effect for modern browsers */
+  @supports (backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px)) {
+    .glass {
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      background: rgba(30, 30, 30, 0.7);
+    }
+  }
+
+  /* Upload progress animations */
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Component-specific styles */
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus-ring;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 focus-ring;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-accent-foreground hover:bg-accent/90 focus-ring;
+  }
+
+  .card-elevated {
+    @apply bg-surface-elevated border border-border shadow-soft;
+  }
+
+  .surface-interactive {
+    @apply bg-surface hover:bg-surface-hover transition-colors duration-200;
+  }
+
+  /* File attachment styles with browser compatibility */
+  .file-attachment {
+    @apply inline-flex items-center gap-2 p-2 bg-black/20 rounded-lg cursor-pointer hover:bg-black/30 transition-colors;
+    /* Fallback for browsers that don't support min() function */
+    max-width: 280px;
+  }
+
+  /* Modern browsers with min() support */
+  @supports (max-width: min(280px, 100%)) {
+    .file-attachment {
+      max-width: min(280px, 100%);
+    }
+  }
+
+  .file-attachment-compact {
+    @apply inline-flex items-center gap-1.5 px-2 py-1 bg-black/20 rounded-md cursor-pointer hover:bg-black/30 transition-colors text-xs;
+    /* Fallback for browsers that don't support min() function */
+    max-width: 200px;
+  }
+
+  /* Modern browsers with min() support */
+  @supports (max-width: min(200px, 100%)) {
+    .file-attachment-compact {
+      max-width: min(200px, 100%);
+    }
+  }
+}
+
+/* Image generation animations - optimized for performance */
+
+/* Smooth image fade-in when loaded */
+@keyframes image-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Applied to images when they load */
+.image-reveal {
+  animation: image-fade-in 0.3s ease-out forwards;
+}
+
+/* Ensure smooth transform animations */
+.smooth-transform {
+  transition: transform 0.05s linear;
+  will-change: transform;
+  transform: translateZ(0); /* Force GPU acceleration */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Image generation clip-path animation support */
+@supports (clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%)) {
+  .image-generation-reveal {
+    will-change: clip-path, mask-image;
+  }
+}
+
+/* Backdrop blur support */
+@supports (backdrop-filter: blur(12px)) {
+  .image-generation-blur {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+/* Image generation overlay */
+.image-generation-overlay {
+  transition: clip-path 0.05s linear;
+  transform: translateZ(0); /* Force GPU acceleration */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+
+/* Image reveal styles */
+.image-reveal {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.image-reveal:not(.image-loaded) {
+  opacity: 0;
+}
+
+.image-reveal.image-loaded {
+  opacity: 1;
+}
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+  background-size: 200% 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Fix for volume slider disabled state */
+[role="slider"][aria-disabled="true"] {
+  opacity: 0.8 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure volume controls are always interactive */
+.audio-volume-slider [role="slider"],
+.audio-volume-slider [role="slider"][aria-disabled="true"] {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Override Radix UI disabled styles for volume controls */
+[data-disabled] .audio-volume-slider,
+.audio-volume-slider[data-disabled] {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Image comparison slider styles */
+.image-comparison-clip {
+  clip-path: inset(0 var(--clip-right) 0 0);
+}
+
+.image-comparison-slider {
+  left: var(--slider-position);
+}
+
+/* Enhanced Perplexity Search Results Styles */
+.search-results-content {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.search-results-content h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.search-results-content img {
+  transition: transform 0.2s ease-in-out;
+}
+
+.search-results-content img:hover {
+  transform: scale(1.05);
+}
+
+.search-results-content a {
+  transition: color 0.2s ease-in-out;
+}
+
+.search-results-content a:hover {
+  text-decoration: underline;
+}
+
+/* Dark mode adjustments for search results */
+@media (prefers-color-scheme: dark) {
+  .search-results-content div[style*="background: #f9fafb"] {
+    background-color: #1f2937 !important;
+  }
+
+  .search-results-content div[style*="border: 1px solid #e5e7eb"] {
+    border-color: #374151 !important;
+  }
+
+  .search-results-content a[style*="color: #1e40af"] {
+    color: #60a5fa !important;
+  }
+
+  .search-results-content span[style*="color: #6b7280"] {
+    color: #9ca3af !important;
+  }
+}
+
+/* Compact Fullscreen Modal Styles */
+.compact-fullscreen {
+  padding: 0 !important;
+}
+
+.compact-fullscreen .dialog-content {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure action buttons wrap properly on smaller screens */
+@media (max-width: 768px) {
+  .compact-fullscreen .flex-wrap {
+    flex-wrap: wrap;
+  }
+  
+  .compact-fullscreen button {
+    flex-shrink: 0;
+  }
+}

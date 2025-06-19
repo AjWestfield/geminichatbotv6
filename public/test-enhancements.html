@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhancement Features Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status-good { border-left: 4px solid #10b981; }
+        .status-warning { border-left: 4px solid #f59e0b; }
+        .status-error { border-left: 4px solid #ef4444; }
+        
+        button {
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #5855eb;
+        }
+        button:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+        }
+        
+        .results {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .loading {
+            opacity: 0.7;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        input, textarea {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Enhancement Features Test</h1>
+    
+    <div class="grid">
+        <!-- Collections API Test -->
+        <div class="test-container">
+            <h2>📁 Collections API Test</h2>
+            <div>
+                <input type="text" id="collectionName" placeholder="Collection name" value="Test Collection">
+                <textarea id="collectionDescription" placeholder="Description" rows="2">A test collection for enhancement features</textarea>
+                <input type="text" id="imageIds" placeholder="Image IDs (comma-separated)" value="test-1,test-2,test-3">
+            </div>
+            <button onclick="createCollection()">Create Collection</button>
+            <button onclick="getCollections()">Get Collections</button>
+            
+            <div id="collectionsResults" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Image Tags API Test -->
+        <div class="test-container">
+            <h2>🏷️ Image Tags API Test</h2>
+            <div>
+                <input type="text" id="tagImageId" placeholder="Image ID" value="test-image-1">
+                <input type="text" id="imageTags" placeholder="Tags (comma-separated)" value="landscape,nature,beautiful">
+            </div>
+            <button onclick="addTags()">Add Tags</button>
+            <button onclick="getTags()">Get Tags</button>
+            <button onclick="removeTag()">Remove First Tag</button>
+            
+            <div id="tagsResults" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Backup Scheduler Test -->
+        <div class="test-container">
+            <h2>🔄 Backup Scheduler Test</h2>
+            <button onclick="getBackupStatus()">Get Backup Status</button>
+            <button onclick="runBackupCheck()">Run Backup Check</button>
+            
+            <div id="backupResults" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Image Recovery Test -->
+        <div class="test-container">
+            <h2>🔧 Image Recovery Test</h2>
+            <div>
+                <input type="text" id="recoveryImageId" placeholder="Image ID to check" value="">
+            </div>
+            <button onclick="checkImageRecovery()">Check Image Status</button>
+            <button onclick="runBulkRecovery()">Run Bulk Recovery</button>
+            
+            <div id="recoveryResults" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Analytics Test -->
+        <div class="test-container">
+            <h2>📊 Analytics Test</h2>
+            <button onclick="getImageStats()">Get Image Statistics</button>
+            <button onclick="generateAnalytics()">Generate Analytics Report</button>
+            
+            <div id="analyticsResults" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- System Health Test -->
+        <div class="test-container">
+            <h2>💚 System Health Test</h2>
+            <button onclick="runSystemHealth()">Run Health Check</button>
+            <button onclick="testAllAPIs()">Test All APIs</button>
+            
+            <div id="healthResults" class="results" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        async function createCollection() {
+            const resultsDiv = document.getElementById('collectionsResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Creating collection...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const name = document.getElementById('collectionName').value;
+                const description = document.getElementById('collectionDescription').value;
+                const imageIds = document.getElementById('imageIds').value.split(',').map(id => id.trim());
+
+                const response = await fetch('/api/collections', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, imageIds })
+                });
+                
+                const data = await response.json();
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getCollections() {
+            const resultsDiv = document.getElementById('collectionsResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Getting collections...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const response = await fetch('/api/collections');
+                const data = await response.json();
+                
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function addTags() {
+            const resultsDiv = document.getElementById('tagsResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Adding tags...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const imageId = document.getElementById('tagImageId').value;
+                const tags = document.getElementById('imageTags').value.split(',').map(tag => tag.trim());
+
+                const response = await fetch(`/api/images/${imageId}/tags`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tags })
+                });
+                
+                const data = await response.json();
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getTags() {
+            const resultsDiv = document.getElementById('tagsResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Getting tags...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const imageId = document.getElementById('tagImageId').value;
+                const response = await fetch(`/api/images/${imageId}/tags`);
+                const data = await response.json();
+                
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function removeTag() {
+            const resultsDiv = document.getElementById('tagsResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Removing tag...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const imageId = document.getElementById('tagImageId').value;
+                const tags = document.getElementById('imageTags').value.split(',').map(tag => tag.trim());
+                const firstTag = tags[0];
+
+                const response = await fetch(`/api/images/${imageId}/tags?tag=${firstTag}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getBackupStatus() {
+            const resultsDiv = document.getElementById('backupResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Getting backup status...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const response = await fetch('/api/images/backup-scheduler');
+                const data = await response.json();
+                
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function runBackupCheck() {
+            const resultsDiv = document.getElementById('backupResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Running backup check...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const response = await fetch('/api/images/backup-scheduler', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'run-backup' })
+                });
+                
+                const data = await response.json();
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function checkImageRecovery() {
+            const resultsDiv = document.getElementById('recoveryResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Checking image recovery...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const imageId = document.getElementById('recoveryImageId').value || 'test-image-1';
+                const response = await fetch(`/api/images/recover?imageId=${imageId}`);
+                const data = await response.json();
+                
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function runBulkRecovery() {
+            const resultsDiv = document.getElementById('recoveryResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Running bulk recovery...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const response = await fetch('/api/images/recover?action=backup-expired');
+                const data = await response.json();
+                
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function getImageStats() {
+            const resultsDiv = document.getElementById('analyticsResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Getting image statistics...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const response = await fetch('/api/images?limit=100');
+                const data = await response.json();
+                
+                // Generate basic analytics
+                const analytics = {
+                    totalImages: data.images.length,
+                    models: {},
+                    qualities: {},
+                    recentImages: 0
+                };
+
+                const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+                data.images.forEach(img => {
+                    // Count models
+                    analytics.models[img.model] = (analytics.models[img.model] || 0) + 1;
+                    
+                    // Count qualities
+                    analytics.qualities[img.quality] = (analytics.qualities[img.quality] || 0) + 1;
+                    
+                    // Count recent images
+                    if (new Date(img.created_at) > oneWeekAgo) {
+                        analytics.recentImages++;
+                    }
+                });
+                
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(analytics, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function generateAnalytics() {
+            const resultsDiv = document.getElementById('analyticsResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Generating analytics report...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                // This would call a dedicated analytics API
+                const response = await fetch('/api/analytics/report');
+                const data = await response.json();
+                
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Analytics API not implemented yet. Error: ${error.message}`;
+            }
+        }
+
+        async function runSystemHealth() {
+            const resultsDiv = document.getElementById('healthResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Running system health check...';
+            resultsDiv.className = 'results loading';
+
+            try {
+                const checks = {
+                    apiHealth: null,
+                    databaseConnection: null,
+                    imageCount: null,
+                    backupStatus: null,
+                    recoverySystem: null
+                };
+
+                // Check API health
+                try {
+                    const response = await fetch('/api/images?limit=1');
+                    checks.apiHealth = response.ok ? 'OK' : 'ERROR';
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        checks.imageCount = data.images.length;
+                        checks.databaseConnection = 'OK';
+                    }
+                } catch {
+                    checks.apiHealth = 'ERROR';
+                    checks.databaseConnection = 'ERROR';
+                }
+
+                // Check backup system
+                try {
+                    const response = await fetch('/api/images/backup-scheduler');
+                    checks.backupStatus = response.ok ? 'OK' : 'ERROR';
+                } catch {
+                    checks.backupStatus = 'ERROR';
+                }
+
+                // Check recovery system
+                try {
+                    const response = await fetch('/api/images/recover?imageId=test');
+                    checks.recoverySystem = response.status === 404 ? 'OK' : 'ERROR'; // 404 is expected for test ID
+                } catch {
+                    checks.recoverySystem = 'ERROR';
+                }
+
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(checks, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function testAllAPIs() {
+            const resultsDiv = document.getElementById('healthResults');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = 'Testing all enhancement APIs...';
+            resultsDiv.className = 'results loading';
+
+            const results = {
+                collections: null,
+                tags: null,
+                backup: null,
+                recovery: null,
+                images: null
+            };
+
+            try {
+                // Test Collections API
+                try {
+                    const response = await fetch('/api/collections');
+                    results.collections = response.ok ? 'OK' : 'ERROR';
+                } catch {
+                    results.collections = 'ERROR';
+                }
+
+                // Test Tags API (will fail for non-existent image, but API should respond)
+                try {
+                    const response = await fetch('/api/images/test/tags');
+                    results.tags = response.status === 404 ? 'OK' : 'ERROR'; // 404 is expected
+                } catch {
+                    results.tags = 'ERROR';
+                }
+
+                // Test Backup API
+                try {
+                    const response = await fetch('/api/images/backup-scheduler');
+                    results.backup = response.ok ? 'OK' : 'ERROR';
+                } catch {
+                    results.backup = 'ERROR';
+                }
+
+                // Test Recovery API
+                try {
+                    const response = await fetch('/api/images/recover?imageId=test');
+                    results.recovery = response.status === 404 ? 'OK' : 'ERROR'; // 404 is expected
+                } catch {
+                    results.recovery = 'ERROR';
+                }
+
+                // Test Images API
+                try {
+                    const response = await fetch('/api/images?limit=1');
+                    results.images = response.ok ? 'OK' : 'ERROR';
+                } catch {
+                    results.images = 'ERROR';
+                }
+
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = JSON.stringify(results, null, 2);
+                
+            } catch (error) {
+                resultsDiv.className = 'results';
+                resultsDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Auto-run system health check on page load
+        window.addEventListener('load', runSystemHealth);
+    </script>
+</body>
+</html>

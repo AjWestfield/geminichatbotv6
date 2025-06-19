@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Image Edit Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .multi-edit-card {
+            background-color: #3a3a3a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #6366f1;
+        }
+        .source-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .source-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 2px solid #555;
+        }
+        .result-image {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #6366f1;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .status.working { background-color: #10b981; }
+        .status.broken { background-color: #ef4444; }
+        .status.expired { background-color: #f59e0b; }
+        .stats {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        button {
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #5855eb;
+        }
+        .error-placeholder {
+            width: 120px;
+            height: 120px;
+            background-color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #ef4444;
+            color: #ef4444;
+            text-align: center;
+            font-size: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🖼️ Multi-Image Edit Workflow Test</h1>
+    
+    <div class="test-container">
+        <h2>Multi-Image Edit Analysis</h2>
+        <p>Testing multi-image edit functionality, source image preservation, and error handling.</p>
+        
+        <button onclick="loadMultiImageEdits()">Load Multi-Image Edits</button>
+        <button onclick="testSourceImagePreservation()">Test Source Preservation</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <h3>📊 Multi-Image Edit Analysis</h3>
+            <div id="statsContent"></div>
+        </div>
+        
+        <div id="multiEditResults"></div>
+    </div>
+
+    <script>
+        let testResults = {
+            total: 0,
+            withSourceImages: 0,
+            withInputImages: 0,
+            workingSourceImages: 0,
+            brokenSourceImages: 0,
+            workingResults: 0,
+            brokenResults: 0
+        };
+
+        async function loadMultiImageEdits() {
+            console.log('Loading multi-image edits...');
+            const resultsDiv = document.getElementById('multiEditResults');
+            resultsDiv.innerHTML = '<div style="color: #6366f1;">Loading multi-image edits...</div>';
+            
+            try {
+                const response = await fetch('/api/images?limit=100');
+                const data = await response.json();
+                
+                // Filter for multi-image edits
+                const multiImageEdits = data.images.filter(img => 
+                    img.model === 'flux-kontext-max-multi' || 
+                    img.metadata?.isMultiImageEdit === true ||
+                    img.metadata?.inputImages ||
+                    img.metadata?.sourceImages
+                );
+                
+                console.log('Found multi-image edits:', multiImageEdits.length);
+                displayMultiImageEdits(multiImageEdits);
+                
+            } catch (error) {
+                console.error('Error loading multi-image edits:', error);
+                resultsDiv.innerHTML = `<div style="color: #ef4444;">Error loading multi-image edits: ${error.message}</div>`;
+            }
+        }
+
+        function displayMultiImageEdits(edits) {
+            const resultsDiv = document.getElementById('multiEditResults');
+            resultsDiv.innerHTML = '';
+            
+            testResults = {
+                total: edits.length,
+                withSourceImages: 0,
+                withInputImages: 0,
+                workingSourceImages: 0,
+                brokenSourceImages: 0,
+                workingResults: 0,
+                brokenResults: 0
+            };
+            
+            if (edits.length === 0) {
+                resultsDiv.innerHTML = '<div style="color: #f59e0b;">No multi-image edits found in the database.</div>';
+                return;
+            }
+            
+            edits.forEach((edit, index) => {
+                const card = createMultiEditCard(edit, index);
+                resultsDiv.appendChild(card);
+            });
+            
+            updateStats();
+        }
+
+        function createMultiEditCard(edit, index) {
+            const card = document.createElement('div');
+            card.className = 'multi-edit-card';
+            card.id = `edit-${index}`;
+            
+            const inputImages = edit.metadata?.inputImages || [];
+            const sourceImages = edit.metadata?.sourceImages || [];
+            
+            if (inputImages.length > 0) testResults.withInputImages++;
+            if (sourceImages.length > 0) testResults.withSourceImages++;
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h3>Multi-Image Edit #${index + 1}</h3>
+                        <p><strong>Prompt:</strong> ${edit.prompt.substring(0, 100)}...</p>
+                        <p><strong>Model:</strong> ${edit.model}</p>
+                        <p><strong>Created:</strong> ${new Date(edit.created_at).toLocaleString()}</p>
+                        <div class="status working" id="result-status-${index}">LOADING</div>
+                    </div>
+                    <div style="margin-left: 20px;">
+                        <h4>Result Image:</h4>
+                        <img 
+                            src="${edit.url}" 
+                            alt="Result" 
+                            class="result-image"
+                            onload="handleResultImageLoad(${index})"
+                            onerror="handleResultImageError(${index})"
+                        />
+                    </div>
+                </div>
+                
+                <div>
+                    <h4>Source Images (${inputImages.length} input images, ${sourceImages.length} source IDs):</h4>
+                    <div class="source-images" id="source-images-${index}">
+                        ${inputImages.map((imgUrl, imgIndex) => {
+                            if (imgUrl === '[DATA_URL_REMOVED]') {
+                                return `<div class="error-placeholder">DATA URL<br>REMOVED</div>`;
+                            }
+                            return `<img 
+                                src="${imgUrl}" 
+                                alt="Source ${imgIndex + 1}" 
+                                class="source-image"
+                                onload="handleSourceImageLoad(${index}, ${imgIndex})"
+                                onerror="handleSourceImageError(${index}, ${imgIndex})"
+                            />`;
+                        }).join('')}
+                    </div>
+                    
+                    ${sourceImages.length > 0 ? `
+                        <div style="margin-top: 10px;">
+                            <strong>Source Image IDs:</strong> ${sourceImages.join(', ')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function handleResultImageLoad(index) {
+            console.log(`Result image ${index} loaded successfully`);
+            const status = document.getElementById(`result-status-${index}`);
+            status.textContent = 'RESULT OK';
+            status.className = 'status working';
+            testResults.workingResults++;
+            updateStats();
+        }
+
+        function handleResultImageError(index) {
+            console.log(`Result image ${index} failed to load`);
+            const status = document.getElementById(`result-status-${index}`);
+            status.textContent = 'RESULT BROKEN';
+            status.className = 'status broken';
+            testResults.brokenResults++;
+            updateStats();
+        }
+
+        function handleSourceImageLoad(editIndex, imgIndex) {
+            console.log(`Source image ${editIndex}-${imgIndex} loaded successfully`);
+            testResults.workingSourceImages++;
+            updateStats();
+        }
+
+        function handleSourceImageError(editIndex, imgIndex) {
+            console.log(`Source image ${editIndex}-${imgIndex} failed to load`);
+            const img = document.querySelector(`#source-images-${editIndex} img:nth-child(${imgIndex + 1})`);
+            if (img) {
+                img.style.display = 'none';
+                const placeholder = document.createElement('div');
+                placeholder.className = 'error-placeholder';
+                placeholder.innerHTML = '⚠️<br>BROKEN<br>SOURCE';
+                img.parentNode.insertBefore(placeholder, img.nextSibling);
+            }
+            testResults.brokenSourceImages++;
+            updateStats();
+        }
+
+        function testSourceImagePreservation() {
+            console.log('Testing source image preservation...');
+            // This would test the preservation logic
+            alert('Source image preservation test would verify that:\n\n' +
+                  '1. Source images are stored in inputImages array\n' +
+                  '2. Source image IDs are stored in sourceImages array\n' +
+                  '3. Source images remain accessible after multi-image edit\n' +
+                  '4. Error handling works for broken source images\n\n' +
+                  'Check the console for detailed analysis.');
+        }
+
+        function updateStats() {
+            const statsDiv = document.getElementById('stats');
+            const statsContent = document.getElementById('statsContent');
+            
+            statsDiv.style.display = 'block';
+            statsContent.innerHTML = `
+                <div>📊 <strong>Total Multi-Image Edits:</strong> ${testResults.total}</div>
+                <div>📥 <strong>With Input Images:</strong> ${testResults.withInputImages}</div>
+                <div>🔗 <strong>With Source IDs:</strong> ${testResults.withSourceImages}</div>
+                <div>✅ <strong>Working Source Images:</strong> ${testResults.workingSourceImages}</div>
+                <div>❌ <strong>Broken Source Images:</strong> ${testResults.brokenSourceImages}</div>
+                <div>✅ <strong>Working Results:</strong> ${testResults.workingResults}</div>
+                <div>❌ <strong>Broken Results:</strong> ${testResults.brokenResults}</div>
+                <div>📈 <strong>Source Preservation Rate:</strong> ${testResults.total > 0 ? ((testResults.withInputImages / testResults.total) * 100).toFixed(1) : 0}%</div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('multiEditResults').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+            testResults = {
+                total: 0,
+                withSourceImages: 0,
+                withInputImages: 0,
+                workingSourceImages: 0,
+                brokenSourceImages: 0,
+                workingResults: 0,
+                brokenResults: 0
+            };
+        }
+
+        // Auto-load on page load
+        window.addEventListener('load', loadMultiImageEdits);
+    </script>
+</body>
+</html>

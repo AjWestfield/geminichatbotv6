@@ -1,0 +1,119 @@
+/* Chat Responsive Fixes */
+
+/* Ensure chat messages handle overflow properly */
+.chat-message-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Table responsiveness */
+.enhanced-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.enhanced-table-wrapper table {
+  min-width: 100%;
+  table-layout: fixed;
+}
+
+/* Responsive text sizes */
+@media (max-width: 640px) {
+  .enhanced-table-wrapper td,
+  .enhanced-table-wrapper th {
+    font-size: 0.75rem; /* text-xs */
+    padding: 0.5rem;
+  }
+  
+  .chat-message-content {
+    font-size: 0.875rem; /* text-sm */
+  }
+}
+
+/* Prevent horizontal scrollbar on main chat container */
+.chat-container {
+  overflow-x: hidden;
+}
+
+/* Ensure search results display properly */
+.search-results-content {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.search-results-content table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Better handling of code blocks */
+.chat-message-content pre {
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Ensure images don't break layout */
+.chat-message-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fix for search metadata tables */
+.search-results-content .summary-table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure proper spacing on mobile */
+@media (max-width: 768px) {
+  .chat-message-wrapper {
+    padding: 0 0.5rem;
+  }
+  
+  .search-results-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+}
+
+/* Fix for follow-up questions wrapping */
+.follow-up-questions {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.follow-up-questions button {
+  white-space: normal;
+  text-align: left;
+}
+
+/* Fix for image hover effects */
+.search-results-grid > div {
+  position: relative;
+  z-index: 1;
+}
+
+.search-results-grid > div:hover {
+  z-index: 10;
+}
+
+/* Ensure image hover rings are not cut off */
+.search-results-grid {
+  padding: 0.25rem;
+}
+
+/* Source card with thumbnail styling */
+.source-thumbnail {
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.source-card:hover .source-thumbnail {
+  transform: scale(1.05);
+}

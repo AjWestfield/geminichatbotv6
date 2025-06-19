@@ -1,0 +1,155 @@
+import { GoogleGenerativeAI } from "@google/generative-ai"
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
+
+export async function POST(req: Request) {
+  try {
+    // Parse request
+    const { 
+      messages, 
+      model = "gemini-2.0-flash",
+      fileUri,
+      fileMimeType,
+      multipleFiles
+    } = await req.json()
+
+    console.log(`[Chat API] Request received with model: ${model}`)
+    console.log(`[Chat API] File URI: ${fileUri}, MIME type: ${fileMimeType}`)
+    console.log(`[Chat API] Multiple files: ${multipleFiles?.length || 0}`)
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response("Invalid messages format", { status: 400 })
+    }
+
+    // Check if it's a Claude model
+    if (model === "Claude Sonnet 4") {
+      console.log('[Chat API] Routing to Claude Sonnet 4 handler')
+      try {
+        const { handleClaudeRequest } = await import('./claude-handler')
+        return handleClaudeRequest(messages)
+      } catch (error) {
+        console.error('[Chat API] Claude handler error:', error)
+        return new Response("Claude handler not available", { status: 500 })
+      }
+    }
+
+    // Handle Gemini models
+    if (model === "gemini-2.0-flash" || model === "gemini-2.5-flash-preview-05-20" || model === "gemini-2.5-pro-preview-06-05") {
+      const chat = genAI.getGenerativeModel({ model: model })
+
+      // Convert messages to Gemini format
+      const contentParts = []
+      
+      // Add multiple files if provided
+      if (multipleFiles && multipleFiles.length > 0) {
+        console.log(`[Chat API] Processing ${multipleFiles.length} files`)
+        for (const file of multipleFiles) {
+          if (file.uri && file.mimeType) {
+            console.log(`[Chat API] Adding file: ${file.name}, ${file.mimeType}`)
+            contentParts.push({
+              fileData: {
+                mimeType: file.mimeType,
+                fileUri: file.uri
+              }
+            })
+          }
+        }
+      } 
+      // Add single file if provided (fallback for backward compatibility)
+      else if (fileUri && fileMimeType) {
+        console.log(`[Chat API] Processing single file: ${fileMimeType}, URI: ${fileUri}`)
+        contentParts.push({
+          fileData: {
+            mimeType: fileMimeType,
+            fileUri: fileUri
+          }
+        })
+      }
+      
+      // Then add message content
+      for (const message of messages) {
+        if (message.role === 'user') {
+          if (typeof message.content === 'string') {
+            contentParts.push({ text: message.content })
+          } else if (Array.isArray(message.content)) {
+            for (const part of message.content) {
+              if (part.type === 'text') {
+                contentParts.push({ text: part.text })
+              } else if (part.type === 'image') {
+                contentParts.push({
+                  inlineData: {
+                    mimeType: part.image.mimeType || 'image/jpeg',
+                    data: part.image.data
+                  }
+                })
+              }
+            }
+          }
+        }
+      }
+
+      // Get streaming response
+      const result = await chat.generateContentStream(contentParts)
+
+      // Create streaming response
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of result.stream) {
+              const text = chunk.text()
+              if (text) {
+                const escapedText = JSON.stringify(text)
+                controller.enqueue(encoder.encode(`0:${escapedText}\n`))
+              }
+            }
+            controller.enqueue(encoder.encode(`d:{"finishReason":"stop"}\n`))
+          } catch (error) {
+            console.error("Streaming error:", error)
+            const errorMessage = error instanceof Error ? error.message : "Unknown error"
+            const escapedError = JSON.stringify(errorMessage)
+            controller.enqueue(encoder.encode(`3:${escapedError}\n`))
+          } finally {
+            controller.close()
+          }
+        },
+      })
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      })
+    }
+
+    // For non-supported models
+    return new Response(
+      JSON.stringify({ error: "Unsupported model: " + model }),
+      {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+  } catch (error) {
+    console.error("Chat API Error:", error)
+
+    // Return error in data stream format
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return new Response(
+      `3:${JSON.stringify(errorMessage)}\n`,
+      {
+        status: 200, // Keep 200 for data stream compatibility
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        }
+      }
+    )
+  }
+}
